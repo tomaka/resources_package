@@ -5,7 +5,7 @@ extern crate rust_package;
 
 #[test]
 fn test() {
-    static package: &'static [(&'static [u8], &'static [u8])] = package!(
+    static package: &'static [(&'static [u8], &'static [u8])] = rust_package!(
         "fixture/*.txt"
     );
 

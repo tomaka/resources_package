@@ -11,7 +11,7 @@
 //! #[phase(plugin)]
 //! extern crate rust_package;
 //! 
-//! static package: &'static [(&'static [u8], &'static [u8])] = package!([
+//! static package: &'static [(&'static [u8], &'static [u8])] = rust_package!([
 //!     "path/to/resources/*.png",
 //!     "path/to/resources/*.mp3"
 //! ]);
@@ -36,7 +36,7 @@ use syntax::codemap::Span;
 #[plugin_registrar]
 #[doc(hidden)]
 pub fn plugin_registrar(reg: &mut rustc::plugin::Registry) {
-    reg.register_macro("package", macro_handler);
+    reg.register_macro("rust_package", macro_handler);
 }
 
 fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
