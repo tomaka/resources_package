@@ -9,9 +9,9 @@ Usage:
 #![feature(phase)]
 
 #[phase(plugin)]
-extern crate rust_package;
+extern crate resources_package;
 
-static package: &'static [(&'static [u8], &'static [u8])] = rust_package!([
+static package: &'static [(&'static [u8], &'static [u8])] = resources_package!([
     "path/to/resources/*.png",
     "path/to/resources/*.mp3"
 ]);

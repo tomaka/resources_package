@@ -1,11 +1,11 @@
 #![feature(phase)]
 
 #[phase(plugin)]
-extern crate rust_package;
+extern crate resources_package;
 
 #[test]
 fn test() {
-    static package: &'static [(&'static [u8], &'static [u8])] = rust_package!(
+    static package: &'static [(&'static [u8], &'static [u8])] = resources_package!(
         "fixture/*.txt"
     );
 
