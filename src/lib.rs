@@ -39,6 +39,7 @@ use std::rc::Rc;
 use syntax::ast::{mod, TokenTree};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::base::{mod, DummyResult, ExtCtxt, MacResult};
+use syntax::parse;
 use syntax::codemap::Span;
 
 #[plugin_registrar]
@@ -121,6 +122,10 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
 
                 let content = content.move_iter().map(|b| ecx.expr_u8(span.clone(), b)).collect();
                 let content = ecx.expr_vec_slice(span.clone(), content);
+
+                // adding dependency to the file by creating a parser and dropping it instantly
+                parse::new_parser_from_source_str(ecx.parse_sess(), ecx.cfg(),
+                    path.as_str().unwrap().to_string(), "".to_string());
 
                 // getting the path relative from the base_path
                 let path = path.path_relative_from(&base_path).unwrap();
