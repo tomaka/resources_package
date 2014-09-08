@@ -10,9 +10,9 @@ fn test() {
     );
 
     assert_eq!(package.len(), 2);
-    assert_eq!(package[0].ref0(), &b"fixture/aaa.txt");
+    assert!(Path::new(*package[0].ref0()) == Path::new("fixture").join("aaa.txt"));
     assert_eq!(package[0].ref1(), &b"aaa\naaa");
 
-    assert_eq!(package[1].ref0(), &b"fixture/b.txt");
+    assert!(Path::new(*package[1].ref0()) == Path::new("fixture").join("b.txt"));
     assert_eq!(package[1].ref1(), &b"b b b");
 }

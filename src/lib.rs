@@ -18,6 +18,14 @@
 //! # fn main() {}
 //! ```
 //! 
+//! The type of the static variable is a slice of (`filename`, `content`). `filename` is
+//!  the result of calling `Path::as_vec()`. To turn it back into a path, call
+//!  `Path::new(filename)`.
+//!
+//! **Important**: because of technical reasons, the crate will produce POSIX path if you compile
+//!  on POSIX, and Windows path if you compile on Windows. Take care if you send them over the
+//!  network.
+//!
 
 #![feature(plugin_registrar)]
 
@@ -54,7 +62,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         return DummyResult::any(span);
     }
 
-    let parameters: Vec<String> = {
+    let parameters: Vec<Path> = {
         use syntax::ast::{ExprLit, ExprVec};
 
         match parameters[0].node {
@@ -63,7 +71,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 let mut result = Vec::new();
                 for element in list.iter() {
                     match base::expr_to_string(ecx, element.clone(), "expected string literal") {
-                        Some((s, _)) => result.push(s.get().to_string()),
+                        Some((s, _)) => result.push(Path::new(s.get().to_string())),
                         None => return DummyResult::any(span)
                     }
                 }
@@ -71,7 +79,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             },
             ExprLit(_) => {
                 vec![match base::expr_to_string(ecx, parameters[0], "expected string literal") {
-                    Some((s, _)) => s.get().to_string(),
+                    Some((s, _)) => Path::new(s.get().to_string()),
                     None => return DummyResult::any(span)
                 }]
             }
@@ -83,8 +91,11 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
     };
 
     // the path to the file currently being compiled
-    let mut base_path = Path::new(ecx.codemap().span_to_filename(span));
-    base_path.pop();
+    let base_path = {
+        let mut base_path = Path::new(ecx.codemap().span_to_filename(span));
+        base_path.pop();
+        base_path
+    };
 
     // loading the data
     let data: Vec<Gc<ast::Expr>> = {
@@ -92,13 +103,13 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
 
         for element in parameters.iter() {
             // turning relative into absolute path
-            let element = if element.as_slice().starts_with("/") {
+            let pattern = if element.is_absolute() {
                 element.clone()
             } else {
-                format!("{}/{}", base_path.display(), element)
+                base_path.join(element)
             };
 
-            for path in glob::glob(element.as_slice()) {
+            for path in glob::glob(pattern.as_str().unwrap()) {
                 let content = match File::open(&path).read_to_end() {
                     Ok(s) => s,
                     Err(e) => {
@@ -111,12 +122,11 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 let content = content.move_iter().map(|b| ecx.expr_u8(span.clone(), b)).collect();
                 let content = ecx.expr_vec_slice(span.clone(), content);
 
-                // removing from the path a number of bytes equal to the size of base_path
-                let path = path.into_vec();
-                let path = path.slice_from(base_path.as_vec().len() + 1).into_vec();
+                // getting the path relative from the base_path
+                let path = path.path_relative_from(&base_path).unwrap();
 
                 data.push(ecx.expr_tuple(span.clone(), vec![
-                    ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(path))),
+                    ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(path.into_vec()))),
                     content
                 ]));
             }
