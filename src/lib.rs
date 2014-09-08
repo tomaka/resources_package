@@ -124,8 +124,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 let content = ecx.expr_vec_slice(span.clone(), content);
 
                 // adding dependency to the file by creating a parser and dropping it instantly
-                parse::new_parser_from_source_str(ecx.parse_sess(), ecx.cfg(),
-                    path.as_str().unwrap().to_string(), "".to_string());
+                ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
 
                 // getting the path relative from the base_path
                 let path = path.path_relative_from(&base_path).unwrap();
