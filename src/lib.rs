@@ -39,7 +39,6 @@ use std::rc::Rc;
 use syntax::ast::{mod, TokenTree};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::base::{mod, DummyResult, ExtCtxt, MacResult};
-use syntax::parse;
 use syntax::codemap::Span;
 
 #[plugin_registrar]
