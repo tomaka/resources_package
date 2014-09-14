@@ -28,13 +28,13 @@
 //!
 
 #![feature(plugin_registrar)]
+#![feature(quote)]
 
 extern crate glob;
 extern crate rustc;
 extern crate syntax;
 
 use std::gc::Gc;
-use std::io::File;
 use std::rc::Rc;
 use syntax::ast::{mod, TokenTree};
 use syntax::ext::build::AstBuilder;
@@ -114,24 +114,17 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                     continue;
                 }
 
-                let content = match File::open(&path).read_to_end() {
-                    Ok(s) => s,
-                    Err(e) => {
-                        ecx.span_err(span, format!("unable to open {}: {}", path.display(), e)
-                            .as_slice());
-                        return DummyResult::any(span);
-                    }
-                };
-
-                let content = content.move_iter().map(|b| ecx.expr_u8(span.clone(), b)).collect();
-                let content = ecx.expr_vec_slice(span.clone(), content);
-
-                // adding dependency to the file by creating a parser and dropping it instantly
+                // adding dependency to the file
                 ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
 
-                // getting the path relative from the base_path
-                let path = path.path_relative_from(&base_path).unwrap();
+                // getting the content of the file as an include_bin! expression
+                let content = {
+                    let path = path.as_str().unwrap();
+                    quote_expr!(ecx, include_bin!($path))
+                };
 
+                // adding the element to the list of files
+                let path = path.path_relative_from(&base_path).unwrap();
                 data.push(ecx.expr_tuple(span.clone(), vec![
                     ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(path.into_vec()))),
                     content
