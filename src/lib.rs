@@ -111,6 +111,10 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             };
 
             for path in glob::glob(pattern.as_str().unwrap()) {
+                if !path.is_file() {
+                    continue;
+                }
+
                 let content = match File::open(&path).read_to_end() {
                     Ok(s) => s,
                     Err(e) => {
