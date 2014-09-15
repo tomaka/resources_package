@@ -34,12 +34,13 @@ extern crate glob;
 extern crate rustc;
 extern crate syntax;
 
-use std::gc::Gc;
+use std::io::fs::PathExtensions;
 use std::rc::Rc;
 use syntax::ast::{mod, TokenTree};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::base::{mod, DummyResult, ExtCtxt, MacResult};
 use syntax::codemap::Span;
+use syntax::ptr::P;
 
 #[plugin_registrar]
 #[doc(hidden)]
@@ -78,10 +79,13 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 result
             },
             ExprLit(_) => {
-                vec![match base::expr_to_string(ecx, parameters[0], "expected string literal") {
-                    Some((s, _)) => Path::new(s.get().to_string()),
-                    None => return DummyResult::any(span)
-                }]
+                vec![match base::expr_to_string(ecx, parameters.as_slice().get(0).unwrap().clone(),
+                    "expected string literal")
+                    {
+                        Some((s, _)) => Path::new(s.get().to_string()),
+                        None => return DummyResult::any(span)
+                    }
+                ]
             }
             _ => {
                 ecx.span_err(span, format!("wrong format for parameter").as_slice());
@@ -98,7 +102,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
     };
 
     // loading the data
-    let data: Vec<Gc<ast::Expr>> = {
+    let data: Vec<P<ast::Expr>> = {
         let mut data = Vec::new();
 
         for element in parameters.iter() {
