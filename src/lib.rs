@@ -10,21 +10,21 @@
 //! 
 //! #[phase(plugin)]
 //! extern crate resources_package;
+//! extern crate resources_package_package;
 //! 
-//! static package: &'static [(&'static [u8], &'static [u8])] = resources_package!([
+//! static package: resources_package_package::Package = resources_package!([
 //!     "path/to/resources",
 //!     "other/path/to/other/resources"
 //! ]);
 //! # fn main() {}
 //! ```
-//! 
-//! The type of the static variable is a slice of (`filename`, `content`). `filename` is
-//!  the result of calling `Path::as_vec()` where the path is relative to the specified directory.
-//! To turn it back into a path, call `Path::new(filename)`.
 //!
-//! **Important**: because of technical reasons, the crate will produce POSIX path if you compile
-//!  on POSIX, and Windows path if you compile on Windows. Take care if you send them over the
-//!  network.
+//! The type of the static variable is a `resources_package_package::Package`. See the
+//!  documentation of `resources_package_package`.
+//! 
+//! ## Arguments
+//!
+//! - List of directories whose content is to be included.
 //!
 
 #![feature(plugin_registrar)]
@@ -148,5 +148,13 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         .collect();
 
     // including data
-    base::MacExpr::new(ecx.expr_vec_slice(span.clone(), data))
+    let slice = ecx.expr_vec_slice(span.clone(), data);
+    base::MacExpr::new(quote_expr!(ecx,
+        {
+            mod foo {
+                extern crate resources_package_package;
+            }
+            foo::resources_package_package::Package { data: $slice }
+        }
+    ))
 }
