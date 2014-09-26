@@ -5,22 +5,22 @@
 //! 
 //! Usage:
 //! 
-//! ```
+//! ```ignore
 //! #![feature(phase)]
 //! 
 //! #[phase(plugin)]
 //! extern crate resources_package;
 //! 
 //! static package: &'static [(&'static [u8], &'static [u8])] = resources_package!([
-//!     "path/to/resources/*.png",
-//!     "path/to/resources/*.mp3"
+//!     "path/to/resources",
+//!     "other/path/to/other/resources"
 //! ]);
 //! # fn main() {}
 //! ```
 //! 
 //! The type of the static variable is a slice of (`filename`, `content`). `filename` is
-//!  the result of calling `Path::as_vec()`. To turn it back into a path, call
-//!  `Path::new(filename)`.
+//!  the result of calling `Path::as_vec()` where the path is relative to the specified directory.
+//! To turn it back into a path, call `Path::new(filename)`.
 //!
 //! **Important**: because of technical reasons, the crate will produce POSIX path if you compile
 //!  on POSIX, and Windows path if you compile on Windows. Take care if you send them over the
@@ -30,11 +30,10 @@
 #![feature(plugin_registrar)]
 #![feature(quote)]
 
-extern crate glob;
 extern crate rustc;
 extern crate syntax;
 
-use std::io::fs::PathExtensions;
+use std::io::fs::{mod, PathExtensions};
 use std::rc::Rc;
 use syntax::ast::{mod, TokenTree};
 use syntax::ext::build::AstBuilder;
@@ -101,43 +100,52 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         base_path
     };
 
-    // loading the data
-    let data: Vec<P<ast::Expr>> = {
-        let mut data = Vec::new();
+    // building the list of elements
+    let data: Vec<P<ast::Expr>> = parameters
+        .into_iter()
+        .map(|p| {
+            // turning each element into an absolute path
+            std::os::make_absolute(&base_path.join(p))
+        })
+        .flat_map(|path| {
+            // for each element, returning a iterator of (Path, Path) where the first one
+            //  is a real file and the second one is the original requested directory
+            match fs::walk_dir(&path) {
+                Ok(val) => val,
+                Err(err) => {
+                    ecx.span_err(span, format!("error while reading the content of `{}`: {}",
+                        path.display(), err).as_slice());
+                    fail!();    // no better solution T_T
+                }
+            }.zip(std::iter::iterate(path, |v| v))
+        })
+        .map(|(path, base)| {
+            // turning this into a (Path, Path) where the first one is the name of the resource
+            //  and the second one is the absolute path on the disk
+            (path.path_relative_from(&base).unwrap(), path.clone())
+        })
+        .filter_map(|(name, path)| {
+            if !path.is_file() {
+                return None;
+            }
 
-        for element in parameters.iter() {
-            // turning relative into absolute path
-            let pattern = if element.is_absolute() {
-                element.clone()
-            } else {
-                base_path.join(element)
+            // adding a compilation dependency to the file, so that a recompilation will be
+            //  triggered if the file is modified
+            ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
+
+            // getting the content of the file as an include_bin! expression
+            let content = {
+                let path = path.as_str().unwrap();
+                quote_expr!(ecx, include_bin!($path))
             };
 
-            for path in glob::glob(pattern.as_str().unwrap()) {
-                if !path.is_file() {
-                    continue;
-                }
-
-                // adding dependency to the file
-                ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
-
-                // getting the content of the file as an include_bin! expression
-                let content = {
-                    let path = path.as_str().unwrap();
-                    quote_expr!(ecx, include_bin!($path))
-                };
-
-                // adding the element to the list of files
-                let path = path.path_relative_from(&base_path).unwrap();
-                data.push(ecx.expr_tuple(span.clone(), vec![
-                    ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(path.into_vec()))),
-                    content
-                ]));
-            }
-        }
-
-        data
-    };
+            // returning the tuple in the array of resources
+            Some(ecx.expr_tuple(span.clone(), vec![
+                ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(name.into_vec()))),
+                content
+            ]))
+        })
+        .collect();
 
     // including data
     base::MacExpr::new(ecx.expr_vec_slice(span.clone(), data))
