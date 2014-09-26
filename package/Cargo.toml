@@ -1,0 +1,9 @@
+[package]
+
+name = "resources_package_package"
+version = "0.0.1"
+authors = ["Pierre Krieger <pierre.krieger1708@gmail.com>"]
+
+[lib]
+name = "resources_package_package"
+path = "src/lib.rs"

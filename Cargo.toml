@@ -9,5 +9,5 @@ name = "resources_package"
 path = "src/lib.rs"
 plugin = true
 
-[dependencies.glob]
-git = "https://github.com/rust-lang/glob"
+[dependencies.resources_package_package]
+path = "package"

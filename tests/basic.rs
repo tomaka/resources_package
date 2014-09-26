@@ -2,17 +2,26 @@
 
 #[phase(plugin)]
 extern crate resources_package;
+extern crate resources_package_package;
 
 #[test]
 fn test() {
-    static package: &'static [(&'static [u8], &'static [u8])] = resources_package!(
-        "fixture/*.txt"
+    static package: resources_package_package::Package = resources_package!(
+        "fixture"
     );
 
-    assert_eq!(package.len(), 2);
-    assert!(Path::new(*package[0].ref0()) == Path::new("fixture").join("aaa.txt"));
-    assert_eq!(package[0].ref1(), &b"aaa\naaa");
+    assert_eq!(package.iter().count(), 3);
 
-    assert!(Path::new(*package[1].ref0()) == Path::new("fixture").join("b.txt"));
-    assert_eq!(package[1].ref1(), &b"b b b");
+    assert_eq!(package.iter().find(|&(ref path, _)| path == &Path::new("aaa.txt"))
+        .map(|(_, ctnt)| ctnt).as_ref(), Some(&b"aaa\naaa"));
+
+    assert_eq!(package.iter().find(|&(ref path, _)| path == &Path::new("b.txt"))
+        .map(|(_, ctnt)| ctnt).as_ref(), Some(&b"b b b"));
+
+    assert_eq!(package.iter().find(|&(ref path, _)| path == &Path::new("subdir").join("cc.txt"))
+        .map(|(_, ctnt)| ctnt).as_ref(), Some(&b"ccc"));
+
+    assert_eq!(package.find(&Path::new("aaa.txt")).as_ref(), Some(&b"aaa\naaa"));
+    assert_eq!(package.find(&Path::new("b.txt")).as_ref(), Some(&b"b b b"));
+    assert_eq!(package.find(&Path::new("subdir").join("cc.txt")).as_ref(), Some(&b"ccc"));
 }

@@ -10,9 +10,16 @@ Usage:
 
 #[phase(plugin)]
 extern crate resources_package;
+extern crate resources_package_package;
 
-static package: &'static [(&'static [u8], &'static [u8])] = resources_package!([
-    "path/to/resources/*.png",
-    "path/to/resources/*.mp3"
+static package: resources_package_package::Package = resources_package!([
+    "path/to/resources",
+    "other/path/to/resources"
 ]);
+
+fn main() {
+    for &(ref name, content) in package.iter() {
+        println!("{}", name.display());
+    }
+}
 ```
