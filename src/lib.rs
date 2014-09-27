@@ -107,17 +107,21 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             // turning each element into an absolute path
             std::os::make_absolute(&base_path.join(p))
         })
-        .flat_map(|path| {
-            // for each element, returning a iterator of (Path, Path) where the first one
-            //  is a real file and the second one is the original requested directory
+        .filter_map(|path| {
+            // call walk_dir for each element and make sure it succeeds
             match fs::walk_dir(&path) {
-                Ok(val) => val,
+                Ok(walker) => Some((walker, path)),
                 Err(err) => {
                     ecx.span_err(span, format!("error while reading the content of `{}`: {}",
                         path.display(), err).as_slice());
-                    fail!();    // no better solution T_T
+                    None
                 }
-            }.zip(std::iter::iterate(path, |v| v))
+            }
+        })
+        .flat_map(|(walker, path)| {
+            // for each element, returning a iterator of (Path, Path) where the first one
+            //  is a real file and the second one is the original requested directory
+            walker.zip(std::iter::iterate(path, |v| v))
         })
         .map(|(path, base)| {
             // turning this into a (Path, Path) where the first one is the name of the resource
