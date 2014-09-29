@@ -124,6 +124,10 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             walker.zip(std::iter::iterate(path, |v| v))
         })
         .map(|(path, base)| {
+            // adding a compilation dependency to the file, so that a recompilation will be
+            //  triggered if the file is modified
+            ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
+
             // turning this into a (Path, Path) where the first one is the name of the resource
             //  and the second one is the absolute path on the disk
             (path.path_relative_from(&base).unwrap(), path.clone())
@@ -132,10 +136,6 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             if !path.is_file() {
                 return None;
             }
-
-            // adding a compilation dependency to the file, so that a recompilation will be
-            //  triggered if the file is modified
-            ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
 
             // getting the content of the file as an include_bin! expression
             let content = {
