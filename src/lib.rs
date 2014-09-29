@@ -135,7 +135,11 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
 
             // adding a compilation dependency to the file, so that a recompilation will be
             //  triggered if the file is modified
-            ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
+            // note that we don't do it if the file contains a white space
+            //  (see https://github.com/rust-lang/cargo/issues/648)
+            if !path.as_str().unwrap().contains(" ") {
+                ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
+            }
 
             // getting the content of the file as an include_bin! expression
             let content = {
