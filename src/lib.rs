@@ -105,7 +105,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         .into_iter()
         .map(|p| {
             // turning each element into an absolute path
-            std::os::make_absolute(&base_path.join(p))
+            std::os::make_absolute(&base_path.join(p)).unwrap()
         })
         .filter_map(|path| {
             // call walk_dir for each element and make sure it succeeds
