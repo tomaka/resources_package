@@ -1,8 +1,10 @@
 [package]
 
 name = "resources_package_package"
-version = "0.0.1"
+version = "0.0.1-pre.1"
 authors = ["Pierre Krieger <pierre.krieger1708@gmail.com>"]
+license = "Apache-2.0"
+description = "Utility for the resources_package library"
 
 [lib]
 name = "resources_package_package"
