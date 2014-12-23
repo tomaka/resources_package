@@ -9,7 +9,7 @@ pub struct Package {
     pub data: &'static [(&'static [u8], &'static [u8])]
 }
 
-pub struct Iter<'a>(std::slice::Items<'a, (&'static [u8], &'static [u8])>);
+pub struct Iter<'a>(std::slice::Iter<'a, (&'static [u8], &'static [u8])>);
 
 impl Package {
     /// Attempts to find a resource in the package.
