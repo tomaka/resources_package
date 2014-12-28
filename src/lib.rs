@@ -1,6 +1,6 @@
 //! This crate allows you to package several files in your executable.
 //! 
-//! This is similar to `include_bin!` but easier to use when you have
+//! This is similar to `include_bytes!` but easier to use when you have
 //! a lot of files.
 //! 
 //! Usage:
@@ -137,10 +137,10 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             //  triggered if the file is modified
             ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
 
-            // getting the content of the file as an include_bin! expression
+            // getting the content of the file as an include_bytes! expression
             let content = {
                 let path = path.as_str().unwrap();
-                quote_expr!(ecx, include_bin!($path))
+                quote_expr!(ecx, include_bytes!($path))
             };
 
             // returning the tuple in the array of resources
