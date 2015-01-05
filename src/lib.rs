@@ -33,11 +33,11 @@
 extern crate rustc;
 extern crate syntax;
 
-use std::io::fs::{mod, PathExtensions};
+use std::io::fs::{self, PathExtensions};
 use std::rc::Rc;
-use syntax::ast::{mod, TokenTree};
+use syntax::ast::{self, TokenTree};
 use syntax::ext::build::AstBuilder;
-use syntax::ext::base::{mod, DummyResult, ExtCtxt, MacResult};
+use syntax::ext::base::{self, DummyResult, ExtCtxt, MacResult};
 use syntax::codemap::Span;
 use syntax::ptr::P;
 
