@@ -33,7 +33,7 @@
 extern crate rustc;
 extern crate syntax;
 
-use std::io::fs::{self, PathExtensions};
+use std::old_io::fs::{self, PathExtensions};
 use std::rc::Rc;
 use syntax::ast::{self, TokenTree};
 use syntax::ext::build::AstBuilder;
