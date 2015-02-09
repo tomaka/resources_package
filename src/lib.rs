@@ -71,7 +71,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 let mut result = Vec::new();
                 for element in list.iter() {
                     match base::expr_to_string(ecx, element.clone(), "expected string literal") {
-                        Some((s, _)) => result.push(Path::new(s.get().to_string())),
+                        Some((s, _)) => result.push(Path::new(s.to_string())),
                         None => return DummyResult::any(span)
                     }
                 }
@@ -81,7 +81,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 vec![match base::expr_to_string(ecx, parameters.as_slice().get(0).unwrap().clone(),
                     "expected string literal")
                     {
-                        Some((s, _)) => Path::new(s.get().to_string()),
+                        Some((s, _)) => Path::new(s.to_string()),
                         None => return DummyResult::any(span)
                     }
                 ]
