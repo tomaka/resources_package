@@ -1,7 +1,8 @@
 #![feature(plugin)]
+#![feature(path)]
 
-#[plugin]
-extern crate resources_package;
+#![plugin(resources_package)]
+
 extern crate resources_package_package;
 
 #[test]
