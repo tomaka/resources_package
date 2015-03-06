@@ -29,6 +29,11 @@
 
 #![feature(plugin_registrar)]
 #![feature(quote)]
+#![feature(rustc_private)]
+#![feature(path)]
+#![feature(core)]
+#![feature(env)]
+#![feature(io)]
 
 extern crate rustc;
 extern crate syntax;
@@ -105,7 +110,15 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         .into_iter()
         .map(|p| {
             // turning each element into an absolute path
-            std::os::make_absolute(&base_path.join(p)).unwrap()
+            let path = base_path.join(p);
+            if path.is_absolute() {
+                Ok(path)
+            } else {
+                std::env::current_dir().map(|mut cur_dir| {
+                    cur_dir.push(path);
+                    cur_dir
+                })
+            }.unwrap()
         })
         .filter_map(|path| {
             // call walk_dir for each element and make sure it succeeds
