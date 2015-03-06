@@ -32,14 +32,13 @@
 #![feature(rustc_private)]
 #![feature(path)]
 #![feature(core)]
-#![feature(env)]
-#![feature(io)]
 
 extern crate rustc;
 extern crate syntax;
 
-use std::old_io::fs::{self, PathExtensions};
+use std::fs::{self, PathExt};
 use std::rc::Rc;
+use std::path::PathBuf;
 use syntax::ast::{self, TokenTree};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::base::{self, DummyResult, ExtCtxt, MacResult};
@@ -67,7 +66,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         return DummyResult::any(span);
     }
 
-    let parameters: Vec<Path> = {
+    let parameters: Vec<PathBuf> = {
         use syntax::ast::{ExprLit, ExprVec};
 
         match parameters[0].node {
@@ -76,7 +75,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 let mut result = Vec::new();
                 for element in list.iter() {
                     match base::expr_to_string(ecx, element.clone(), "expected string literal") {
-                        Some((s, _)) => result.push(Path::new(s.to_string())),
+                        Some((s, _)) => result.push(PathBuf::new(&s.to_string())),
                         None => return DummyResult::any(span)
                     }
                 }
@@ -86,7 +85,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 vec![match base::expr_to_string(ecx, parameters.as_slice().get(0).unwrap().clone(),
                     "expected string literal")
                     {
-                        Some((s, _)) => Path::new(s.to_string()),
+                        Some((s, _)) => PathBuf::new(&s.to_string()),
                         None => return DummyResult::any(span)
                     }
                 ]
@@ -100,7 +99,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
 
     // the path to the file currently being compiled
     let base_path = {
-        let mut base_path = Path::new(ecx.codemap().span_to_filename(span));
+        let mut base_path = PathBuf::new(&ecx.codemap().span_to_filename(span));
         base_path.pop();
         base_path
     };
@@ -110,12 +109,12 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         .into_iter()
         .map(|p| {
             // turning each element into an absolute path
-            let path = base_path.join(p);
+            let path = base_path.join(&p);
             if path.is_absolute() {
                 Ok(path)
             } else {
                 std::env::current_dir().map(|mut cur_dir| {
-                    cur_dir.push(path);
+                    cur_dir.push(&path);
                     cur_dir
                 })
             }.unwrap()
@@ -132,33 +131,37 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             }
         })
         .flat_map(|(walker, path)| {
-            // for each element, returning a iterator of (Path, Path) where the first one
+            // for each element, returning a iterator of (PathBuf, PathBuf) where the first one
             //  is a real file and the second one is the original requested directory
             walker.zip(std::iter::iterate(path, |v| v))
         })
         .map(|(path, base)| {
-            // turning this into a (Path, Path) where the first one is the name of the resource
+            let path = path.unwrap();
+            // turning this into a (PathBuf, PathBuf) where the first one is the name of the resource
             //  and the second one is the absolute path on the disk
-            (path.path_relative_from(&base).unwrap(), path.clone())
+            (path.path().relative_from(&base).unwrap().to_path_buf(), path.path().clone())
         })
         .filter_map(|(name, path)| {
             if !path.is_file() {
                 return None;
             }
 
+            let path = path.into_os_string().into_string().unwrap();
+            let name = name.to_str().unwrap();
+
             // adding a compilation dependency to the file, so that a recompilation will be
             //  triggered if the file is modified
-            ecx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
+            ecx.codemap().new_filemap(path.clone(), "".to_string());
 
             // getting the content of the file as an include_bytes! expression
             let content = {
-                let path = path.as_str().unwrap();
+                let path = &path[..];
                 quote_expr!(ecx, include_bytes!($path))
             };
 
             // returning the tuple in the array of resources
             Some(ecx.expr_tuple(span.clone(), vec![
-                ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(name.into_vec()))),
+                ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(name.to_string().into_bytes()))),
                 content
             ]))
         })
