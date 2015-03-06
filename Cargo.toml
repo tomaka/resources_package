@@ -1,7 +1,7 @@
 [package]
 
 name = "resources_package"
-version = "0.0.6-pre"
+version = "0.0.6"
 authors = ["Pierre Krieger <pierre.krieger1708@gmail.com>"]
 license = "Apache-2.0"
 description = "Macro that allows you to package files inside your libraries or executables."

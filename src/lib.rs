@@ -153,7 +153,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
 
     // including data
     let slice = ecx.expr_vec_slice(span.clone(), data);
-    base::MacExpr::new(quote_expr!(ecx,
+    base::MacEager::expr(quote_expr!(ecx,
         {
             mod foo {
                 extern crate resources_package_package;
