@@ -15,4 +15,5 @@ path = "src/lib.rs"
 plugin = true
 
 [dependencies.resources_package_package]
+path = "package"
 version = "*"
