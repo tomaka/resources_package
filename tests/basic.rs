@@ -1,5 +1,4 @@
 #![feature(plugin)]
-#![feature(path)]
 
 #![plugin(resources_package)]
 
@@ -7,7 +6,7 @@ extern crate resources_package_package;
 
 #[test]
 fn test() {
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     static PACKAGE: resources_package_package::Package = resources_package!(
         "fixture"
@@ -16,7 +15,7 @@ fn test() {
     assert_eq!(PACKAGE.iter().count(), 3);
 
     // TODO: drop "[..]" when this bug is fixed:
-+   //   https://github.com/rust-lang/rust/issues/22649
+    //    https://github.com/rust-lang/rust/issues/22649
 
     assert_eq!(PACKAGE.iter().find(|&(ref path, _)| path.as_path() == Path::new("aaa.txt"))
         .map(|(_, ctnt)| ctnt), Some(&b"aaa\naaa"[..]));
