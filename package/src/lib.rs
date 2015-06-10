@@ -22,7 +22,8 @@ impl Package {
     ///
     /// If multiple resources have the same path, the first one will be returned. You should try
     ///  to avoid this situation.
-    pub fn find(&self, resource: &Path) -> Option<&'static [u8]> {
+    pub fn find<P>(&self, resource: P) -> Option<&'static [u8]> where P: AsRef<Path> {
+        let resource = resource.as_ref();
         self.data.iter().find(|&&(path, _)| {
             Path::new(&String::from_utf8(path.to_vec()).unwrap()) == resource
         }).map(|v| v.1)
