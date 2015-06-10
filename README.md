@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/tomaka/rust-package.svg?branch=master)](https://travis-ci.org/tomaka/rust-package)
+
 This crate allows you to package several files in your executable.
 
 This is similar to `include_bin!` but easier to use when you have

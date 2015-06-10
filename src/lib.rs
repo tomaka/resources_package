@@ -1,17 +1,17 @@
 //! This crate allows you to package several files in your executable.
-//! 
+//!
 //! This is similar to `include_bytes!` but easier to use when you have
 //! a lot of files.
-//! 
+//!
 //! Usage:
-//! 
+//!
 //! ```ignore
 //! #![feature(phase)]
-//! 
+//!
 //! #[phase(plugin)]
 //! extern crate resources_package;
 //! extern crate resources_package_package;
-//! 
+//!
 //! static package: resources_package_package::Package = resources_package!([
 //!     "path/to/resources",
 //!     "other/path/to/other/resources"
@@ -21,7 +21,7 @@
 //!
 //! The type of the static variable is a `resources_package_package::Package`. See the
 //!  documentation of `resources_package_package`.
-//! 
+//!
 //! ## Arguments
 //!
 //! - List of directories whose content is to be included.
@@ -30,7 +30,9 @@
 #![feature(plugin_registrar)]
 #![feature(quote)]
 #![feature(rustc_private)]
-#![feature(path)]
+#![feature(fs_walk)]
+#![feature(path_relative_from)]
+#![feature(path_ext)]
 #![feature(core)]
 
 extern crate rustc;
@@ -61,8 +63,8 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
     };
 
     if parameters.len() != 1 {
-        ecx.span_err(span, format!("expected 1 argument but got {} (did you forget []?)",
-            parameters.len()).as_slice());
+        ecx.span_err(span, &*format!("expected 1 argument but got {} (did you forget []?)",
+            parameters.len()));
         return DummyResult::any(span);
     }
 
@@ -75,23 +77,23 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
                 let mut result = Vec::new();
                 for element in list.iter() {
                     match base::expr_to_string(ecx, element.clone(), "expected string literal") {
-                        Some((s, _)) => result.push(PathBuf::new(&s.to_string())),
+                        Some((s, _)) => result.push(PathBuf::from(&s.to_string())),
                         None => return DummyResult::any(span)
                     }
                 }
                 result
             },
             ExprLit(_) => {
-                vec![match base::expr_to_string(ecx, parameters.as_slice().get(0).unwrap().clone(),
+                vec![match base::expr_to_string(ecx, (*parameters).get(0).unwrap().clone(),
                     "expected string literal")
                     {
-                        Some((s, _)) => PathBuf::new(&s.to_string()),
+                        Some((s, _)) => PathBuf::from(&s.to_string()),
                         None => return DummyResult::any(span)
                     }
                 ]
             }
             _ => {
-                ecx.span_err(span, format!("wrong format for parameter").as_slice());
+                ecx.span_err(span, &*format!("wrong format for parameter"));
                 return DummyResult::any(span);
             }
         }
@@ -99,7 +101,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
 
     // the path to the file currently being compiled
     let base_path = {
-        let mut base_path = PathBuf::new(&ecx.codemap().span_to_filename(span));
+        let mut base_path = PathBuf::from(&ecx.codemap().span_to_filename(span));
         base_path.pop();
         base_path
     };
@@ -124,8 +126,8 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
             match fs::walk_dir(&path) {
                 Ok(walker) => Some((walker, path)),
                 Err(err) => {
-                    ecx.span_err(span, format!("error while reading the content of `{}`: {}",
-                        path.display(), err).as_slice());
+                    ecx.span_err(span, &*format!("error while reading the content of `{}`: {}",
+                        path.display(), err));
                     None
                 }
             }
