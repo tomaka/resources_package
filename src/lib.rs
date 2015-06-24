@@ -33,7 +33,7 @@
 #![feature(fs_walk)]
 #![feature(path_relative_from)]
 #![feature(path_ext)]
-#![feature(core)]
+#![feature(iter_iterate)]
 
 extern crate rustc;
 extern crate syntax;
