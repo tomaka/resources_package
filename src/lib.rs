@@ -33,7 +33,6 @@
 #![feature(fs_walk)]
 #![feature(path_relative_from)]
 #![feature(path_ext)]
-#![feature(iter_iterate)]
 
 extern crate rustc;
 extern crate syntax;
@@ -135,7 +134,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
         .flat_map(|(walker, path)| {
             // for each element, returning a iterator of (PathBuf, PathBuf) where the first one
             //  is a real file and the second one is the original requested directory
-            walker.zip(std::iter::iterate(path, |v| v))
+            walker.zip(std::iter::repeat(path).map(|v| v))
         })
         .map(|(path, base)| {
             let path = path.unwrap();
@@ -163,7 +162,7 @@ fn macro_handler(ecx: &mut ExtCtxt, span: Span, token_tree: &[TokenTree])
 
             // returning the tuple in the array of resources
             Some(ecx.expr_tuple(span.clone(), vec![
-                ecx.expr_lit(span.clone(), ast::LitBinary(Rc::new(name.to_string().into_bytes()))),
+                ecx.expr_lit(span.clone(), ast::LitByteStr(Rc::new(name.to_string().into_bytes()))),
                 content
             ]))
         })
